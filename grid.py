@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -20,16 +20,12 @@ class GridTile(Enum):
     AGENT_IN_HOLE = 5
 
 class Environment:
-    def __init__(self, n: int, goal_pos: Optional[Tuple[int, int]] = None):
+    def __init__(self, n: int, goal_pos: Tuple[int, int]):
         assert n > 1, "n should be > 1"
-        assert goal_pos is None or (goal_pos[0] in range(0, n) and goal_pos[1] in range(0, n)), "The position of the goal should be within the grid"
+        assert goal_pos[0] in range(0, n) and goal_pos[1] in range(0, n), "The position of the goal should be within the grid"
         self._n = n
         self._grid: np.ndarray = np.ones((n, n), dtype=np.uint8) * GridTile.FIELD.value
-        if goal_pos is None:
-            pos = random.randint(0, n**2 - 1)
-            self._grid[pos//n, pos%n] = GridTile.GOAL.value
-        else:
-            self._grid[goal_pos] = GridTile.GOAL.value
+        self._grid[goal_pos] = GridTile.GOAL.value
 
     def step(self, state: Tuple[int, int], action: Action) -> Tuple[Tuple[int, int], float, bool]:
         assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid"
@@ -64,17 +60,11 @@ class Environment:
         raise NotImplementedError # Should the reset methode exist, if the state is managed from outside?
 
 
-    def createHole(self, hole_pos: Optional[Tuple[int, int]] = None):
-        assert hole_pos is None or (hole_pos[0] in range(0, self._n) and hole_pos[1] in range(0, self._n)), "The position of the hole should be within the grid"
-        assert hole_pos is None or self._grid[hole_pos] == GridTile.FIELD.value, "The hole can only be placed on a FIELD"
-
-        if hole_pos is None:
-            goal_pos = np.where(self._grid == GridTile.GOAL.value)[0][0]
-            goal_num = goal_pos[0]*5 + goal_pos[1]
-            hole_num = random.choice([num for num in range(0, self._n**2 - 1) if num != goal_num])
-            self._grid[hole_num//self._n, hole_num%self._n] = GridTile.HOLE.value
-        else:
-            self._grid[hole_pos] = GridTile.HOLE.value
+    def createHole(self, hole_pos: Tuple[int, int]):
+        assert hole_pos[0] in range(0, self._n) and hole_pos[1] in range(0, self._n), "The position of the hole should be within the grid"
+        assert self._grid[hole_pos] == GridTile.FIELD.value, "The hole can only be placed on a FIELD"
+        
+        self._grid[hole_pos] = GridTile.HOLE.value
 
     
     def view_grid(self, state: Tuple[int, int], allow_emojis: bool = True):
