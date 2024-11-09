@@ -6,10 +6,10 @@ import numpy as np
 
 
 class Action(Enum):
-    UP = "UP"
-    DOWN = "DOWN"
-    LEFT = "LEFT"
-    RIGHT = "RIGHT"
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
 
 class GridTile(Enum):
     HOLE = 0
@@ -30,6 +30,9 @@ class Environment:
     def step(self, state: Tuple[int, int], action: Action) -> Tuple[Tuple[int, int], float, bool]:
         assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid"
 
+        if self._grid[state] == GridTile.GOAL.value or self._grid[state] == GridTile.HOLE.value:
+            return state, 0, True
+
         new_state = None
         reward = 0
         done = False
@@ -45,10 +48,9 @@ class Environment:
         if (not new_state[0] in range(0, self._n)) or (not new_state[1] in range(0, self._n)):
             new_state = state
             reward = -1
-            if self._grid[new_state] == GridTile.GOAL.value:
-                done = True
         else:
             if self._grid[new_state] == GridTile.HOLE.value:
+                done = True
                 reward = -1
             elif self._grid[new_state] == GridTile.GOAL.value:
                 done = True
