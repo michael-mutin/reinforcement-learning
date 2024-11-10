@@ -14,7 +14,7 @@ class Policy():
         assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid"
         return Action(self._action_policy[state])
     
-    def evaluation(self, value_func: np.ndarray, env: Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+    def policy_evalution(self, value_func: np.ndarray, env: Environment, discount=0.9, threshold=0.1) -> np.ndarray:
         value_func = value_func.copy()
         while True:
             delta = 0
@@ -28,7 +28,7 @@ class Policy():
             if delta < threshold:
                 return value_func
             
-    def improvement(self, value_func: np.ndarray, env: Environment, discount=0.9) -> bool:
+    def policy_improvement(self, value_func: np.ndarray, env: Environment, discount=0.9) -> bool:
         policy_stable = True
         for i, j in np.ndindex(value_func.shape):
             old_action = self._action_policy[(i, j)]
@@ -42,16 +42,51 @@ class Policy():
                 policy_stable = False
         return policy_stable
     
-    def iteration(self, value_func: np.ndarray, env:Environment, discount=0.9, threshold=0.1) -> None:
+    def policy_iteration(self, value_func: np.ndarray, env:Environment, discount=0.9, threshold=0.1) -> np.ndarray:
         while True:
-            value_func = policy.evaluation(value_func, env, discount, threshold)
-            if policy.improvement(value_func, env, discount):
+            value_func = policy.policy_evalution(value_func, env, discount, threshold)
+            if policy.policy_improvement(value_func, env, discount):
+                return value_func
+            
+    def value_iteration(self, value_func: np.ndarray, env:Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+        value_func = value_func.copy()
+        while True:
+            delta = 0
+            for i, j in np.ndindex(value_func.shape):
+                v = value_func[(i, j)]
+                action_value = []
+                for action in self._possible_actions:
+                    next_state, reward, _ = env.step((i,j), action)
+                    action_value.append(reward + discount*value_func[next_state])
+                value_func[(i, j)] = max(action_value)
+                delta = max(delta, abs(v - value_func[(i, j)]))
+            if delta < threshold:
                 break
+        for i, j in np.ndindex(value_func.shape):
+            action_value = {}
+            for action in self._possible_actions:
+                next_state, reward, _ = env.step((i,j), action)
+                action_value[action] = reward + discount*value_func[next_state]
+            max_action = max(action_value, key=action_value.get)
+            self._action_policy[(i,j)] = max_action.value
+        return value_func
+        
+
 
 def print_next_state(next_state, reward, done):
     print('\033[2J\033[H', end='')
     env.view_grid(next_state)
     print(f"Reward: {reward}, Done: {done}")
+
+import matplotlib.pyplot as plt
+def vis_matrix(M, cmap=plt.cm.Blues):
+    fig, ax = plt.subplots()
+    ax.matshow(M, cmap=cmap)
+    for i in range(M.shape[0]):
+        for j in range(M.shape[1]):
+            c = M[j, i]
+            ax.text(i, j, "%.2f" % c, va="center", ha="center")
+    fig.show()
     
 if __name__ == "__main__":
     import random
@@ -66,7 +101,10 @@ if __name__ == "__main__":
     policy = Policy(n)
     value_func = np.zeros((n,n))
 
-    policy.iteration(value_func, env)
+    # value_func = policy.policy_iteration(value_func, env)
+    value_func = policy.value_iteration(value_func, env)
+
+    vis_matrix(value_func)
 
     occupied = holes_pos + [goal_pos]
     while True:
