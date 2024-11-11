@@ -1,4 +1,5 @@
 from typing import Tuple
+import matplotlib.pyplot as plt
 
 import numpy as np
 from grid import Action, Environment
@@ -11,10 +12,14 @@ class Policy():
         self._action_policy = np.random.choice([action.value for action in self._possible_actions], size=(n, n))
 
     def __call__(self, state: Tuple[int, int]) -> Action:
-        assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid"
+        assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid."
         return Action(self._action_policy[state])
     
-    def policy_evalution(self, value_func: np.ndarray, env: Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+    def policy_evalution(self, value_func: np.ndarray, env: Environment, discount: float = 0.9, threshold: float = 0.1) -> np.ndarray:
+        assert value_func.shape == (self._n, self._n), "The value_func has to be of shape nxn where n is the value provided in __init__ when creating the policy."
+        assert 0 <= discount and discount <= 1, "The discount has to be between 0 and 1."
+        assert threshold > 0, "The threshold has to be a small positive number (bigger than 0)."
+
         value_func = value_func.copy()
         while True:
             delta = 0
@@ -28,7 +33,10 @@ class Policy():
             if delta < threshold:
                 return value_func
             
-    def policy_improvement(self, value_func: np.ndarray, env: Environment, discount=0.9) -> bool:
+    def policy_improvement(self, value_func: np.ndarray, env: Environment, discount: float = 0.9) -> bool:
+        assert value_func.shape == (self._n, self._n), "The value_func has to be of shape nxn where n is the value provided in __init__ when creating the policy."
+        assert 0 <= discount and discount <= 1, "The discount has to be between 0 and 1."
+
         policy_stable = True
         for i, j in np.ndindex(value_func.shape):
             old_action = self._action_policy[(i, j)]
@@ -42,13 +50,24 @@ class Policy():
                 policy_stable = False
         return policy_stable
     
-    def policy_iteration(self, value_func: np.ndarray, env:Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+    def policy_iteration(self, value_func: np.ndarray, env: Environment, discount: float = 0.9, threshold:float = 0.1) -> np.ndarray:
+        assert value_func.shape == (self._n, self._n), "The value_func has to be of shape nxn where n is the value provided in __init__ when creating the policy."
+        assert 0 <= discount and discount <= 1, "The discount has to be between 0 and 1."
+        assert threshold > 0, "The threshold has to be a small positive number (bigger than 0)."
+
         while True:
-            value_func = policy.policy_evalution(value_func, env, discount, threshold)
-            if policy.policy_improvement(value_func, env, discount):
+            value_func = self.policy_evalution(value_func, env, discount, threshold)
+            if self.policy_improvement(value_func, env, discount):
                 return value_func
             
-    def value_iteration(self, value_func: np.ndarray, env:Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+    def value_iteration(self, value_func: np.ndarray, env: Environment, discount=0.9, threshold=0.1) -> np.ndarray:
+        """
+        The value_func has to be 0 at terminal states.
+        """
+        assert value_func.shape == (self._n, self._n), "The value_func has to be of shape nxn where n is the value provided in __init__ when creating the policy."
+        assert 0 <= discount and discount <= 1, "The discount has to be between 0 and 1."
+        assert threshold > 0, "The threshold has to be a small positive number (bigger than 0)."
+
         value_func = value_func.copy()
         while True:
             delta = 0
@@ -72,14 +91,7 @@ class Policy():
         return value_func
         
 
-
-def print_next_state(next_state, reward, done):
-    print('\033[2J\033[H', end='')
-    env.view_grid(next_state)
-    print(f"Reward: {reward}, Done: {done}")
-
-import matplotlib.pyplot as plt
-def vis_matrix(M, cmap=plt.cm.Blues):
+def vis_matrix(M: np.ndarray, cmap=plt.cm.Blues):
     fig, ax = plt.subplots()
     ax.matshow(M, cmap=cmap)
     for i in range(M.shape[0]):
@@ -87,36 +99,3 @@ def vis_matrix(M, cmap=plt.cm.Blues):
             c = M[j, i]
             ax.text(i, j, "%.2f" % c, va="center", ha="center")
     fig.show()
-    
-if __name__ == "__main__":
-    import random
-    import time
-
-    n = 7
-    goal_pos = (2,2)
-    holes_pos = [(1,1), (1,2), (5,3), (4,6), (0,3)]
-    env = Environment(n, goal_pos)
-    for hole_pos in holes_pos:
-        env.createHole(hole_pos)
-    policy = Policy(n)
-    value_func = np.zeros((n,n))
-
-    # value_func = policy.policy_iteration(value_func, env)
-    value_func = policy.value_iteration(value_func, env)
-
-    vis_matrix(value_func)
-
-    occupied = holes_pos + [goal_pos]
-    while True:
-        next_state = random.choice([(i,j) for i in range(n) for j in range(n) if (i,j) not in occupied])
-        print('\033[2J\033[H', end='')
-        env.view_grid(next_state)
-        input("Press ENTER to start the agent.")   
-        while True:            
-            time.sleep(1)
-            action = policy(next_state)
-            next_state, reward, done = env.step(next_state, action)
-            print_next_state(next_state, reward, done)
-            if done:
-                input("Press ENTER to restart the agent.") 
-                break
