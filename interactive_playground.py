@@ -3,16 +3,16 @@ import keyboard
 
 # Example
 env = Environment(7, (0,0))
-env.createHole((1,1))
-env.createHole((1,2))
-env.createHole((5,3))
-env.createHole((4,6))
-env.createHole((0,3))
+env.create_hole((1,1))
+env.create_hole((1,2))
+env.create_hole((5,3))
+env.create_hole((4,6))
+env.create_hole((0,3))
 next_state = (6,6)
 
 def print_next_state(next_state, reward, done):
     print('\033[2J\033[H', end='')
-    env.view_grid(next_state)
+    env.print_grid(next_state)
     print(f"Reward: {reward}, Done: {done}")
 
 def on_key_event(event):
@@ -34,5 +34,5 @@ def on_key_event(event):
 
 keyboard.on_press(on_key_event)
 print("Press ESC to exit the running program.")
-env.view_grid(next_state)
+env.print_grid(next_state)
 keyboard.wait('esc')
