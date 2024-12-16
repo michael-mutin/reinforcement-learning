@@ -25,7 +25,7 @@ class Policy():
 
     def __call__(self, state: Tuple[int, int]) -> Action:
         """
-        Returns the action for a particular state.
+        Returns the best action for a particular state.
 
         :param state: The state for which you want the action.
         :type state: Tuple[int, int]
@@ -34,15 +34,13 @@ class Policy():
         """
         assert state[0] in range(0, self._n) and state[1] in range(0, self._n), "The state should be within the grid."
 
-        # return Action(self._action_policy[state])
         a = np.argmax(self._q_function[state])
         return Action(a)
     
     def epsilon_greedy(self, epsilon, state: Tuple[int, int]) -> Action:
         return np.random.choice(self._possible_actions) if np.random.rand() < epsilon else Action(np.argmax(self._q_function[state]))
     
-    def sarsa(self, env: Environment, episodes=10000, learning_rate=0.3, discount=0.9, epsilon=0.3):
-        
+    def sarsa(self, env: Environment, episodes=10000, learning_rate=0.3, discount=0.9, epsilon=0.3):     
         for i in range(episodes):
             state = env.reset()
             print(f"Episode {i}")
@@ -81,8 +79,6 @@ class Policy():
     def vis_matrix(self, cmap=plt.cm.Blues):
         """Visualizes a matrix.
 
-        :param M: The matrix to visualize.
-        :type M: np.ndarray
         :param cmap: cmap., defaults to plt.cm.Blues
         """
         greedy_arr = np.max(self._q_function, axis=-1)
